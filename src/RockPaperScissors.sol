@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 
 contract RockPaperScissors {
     uint256 public gameID;
+
     struct Game {
         address player1;
         address player2;
@@ -41,15 +42,8 @@ contract RockPaperScissors {
      * @param _move: The move player 2 made
      *  @notice Player 2 joins and gives his move
      */
-    function joinGame(uint256 _gameId, State _move)
-        public
-        payable
-        validGameID(_gameId)
-    {
-        require(
-            msg.value == games[_gameId].stakedAmount,
-            "Must stake the same amount as player 1"
-        );
+    function joinGame(uint256 _gameId, State _move) public payable validGameID(_gameId) {
+        require(msg.value == games[_gameId].stakedAmount, "Must stake the same amount as player 1");
         require(games[_gameId].player2 == address(0), "Player2 already exists");
         if (games[_gameId].player1 == msg.sender) revert("Cannot join");
         games[_gameId].player2 = msg.sender;
@@ -63,33 +57,20 @@ contract RockPaperScissors {
      * @param _salt : Salt that was used to hash his move
      * @notice Player1 must reveal his move once the player 2 has played his
      */
-    function reveal(
-        uint256 _gameId,
-        State _player1Move,
-        string memory _salt
-    ) public validGameID(_gameId) {
+    function reveal(uint256 _gameId, State _player1Move, string memory _salt) public validGameID(_gameId) {
         Game storage game = games[_gameId];
-        require(
-            game.player2Move != State.NONE,
-            "Player2 has not made a move yet!"
-        );
+        require(game.player2Move != State.NONE, "Player2 has not made a move yet!");
 
-        bytes32 calculatedHash = keccak256(
-            abi.encodePacked(_player1Move, _salt)
-        );
+        bytes32 calculatedHash = keccak256(abi.encodePacked(_player1Move, _salt));
         // Validation
         if (calculatedHash != game.player1Move) revert("Invalid Data");
 
         // Winner conditions
         if (game.player2Move == State.PAPER && _player1Move == State.ROCK) {
             game.winner = game.player2;
-        } else if (
-            game.player2Move == State.SCISSOR && _player1Move == State.PAPER
-        ) {
+        } else if (game.player2Move == State.SCISSOR && _player1Move == State.PAPER) {
             game.winner = game.player2;
-        } else if (
-            game.player2Move == State.ROCK && _player1Move == State.SCISSOR
-        ) {
+        } else if (game.player2Move == State.ROCK && _player1Move == State.SCISSOR) {
             game.winner = game.player2;
         } else if (game.player2Move == _player1Move) {
             uint256 stakedAmount = game.stakedAmount;
@@ -107,9 +88,9 @@ contract RockPaperScissors {
     /**
      * @param _gameId : ID of the game
      * @notice Claim player wins in two conditions:
-        1. If he is the winner
-        2. Or if the player1 has not revealed his move before the reveal expire time
-    */
+     *     1. If he is the winner
+     *     2. Or if the player1 has not revealed his move before the reveal expire time
+     */
     function claimPrize(uint256 _gameId) public validGameID(_gameId) {
         Game storage game = games[_gameId];
         uint256 prize = game.stakedAmount;
