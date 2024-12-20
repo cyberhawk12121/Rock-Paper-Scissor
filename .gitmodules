@@ -1,4 +1,4 @@
-[submodule "mrtr-token/lib/forge-std"]
+[submodule "Rock-Paper-Scissor/lib/forge-std"]
 	path = mrtr-token/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
 [submodule "lib/openzeppelin-contracts-upgradeable"]
