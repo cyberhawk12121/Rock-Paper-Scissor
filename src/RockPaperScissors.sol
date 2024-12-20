@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract Game {
+contract RockPaperScissors {
     uint256 public gameID;
     struct Game {
         address player1;
