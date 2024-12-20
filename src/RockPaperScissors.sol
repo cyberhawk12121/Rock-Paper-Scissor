@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract RockPaperScissors {
+import "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
+contract RockPaperScissors is OwnableUpgradeable, UUPSUpgradeable {
     uint256 public gameID;
 
     struct Game {
@@ -17,10 +20,19 @@ contract RockPaperScissors {
     mapping(uint256 => Game) public games;
 
     enum State {
-        NONE,
         ROCK,
         PAPER,
         SCISSOR
+    }
+
+    error Invalid_Move();
+
+    constructor() {
+        _disableInitializers();
+    }
+
+    function initialize(address _owner) public initializer {
+        __Ownable_init(_owner);
     }
 
     modifier validGameID(uint256 _gameId) {
@@ -45,7 +57,7 @@ contract RockPaperScissors {
     function joinGame(uint256 _gameId, State _move) public payable validGameID(_gameId) {
         require(msg.value == games[_gameId].stakedAmount, "Must stake the same amount as player 1");
         require(games[_gameId].player2 == address(0), "Player2 already exists");
-        if (games[_gameId].player1 == msg.sender) revert("Cannot join");
+        require(games[_gameId].player1 != msg.sender, "Cannot join own game");
         games[_gameId].player2 = msg.sender;
         games[_gameId].player2Move = _move;
         games[_gameId].stakedAmount += msg.value;
@@ -59,11 +71,9 @@ contract RockPaperScissors {
      */
     function reveal(uint256 _gameId, State _player1Move, string memory _salt) public validGameID(_gameId) {
         Game storage game = games[_gameId];
-        require(game.player2Move != State.NONE, "Player2 has not made a move yet!");
-
         bytes32 calculatedHash = keccak256(abi.encodePacked(_player1Move, _salt));
         // Validation
-        if (calculatedHash != game.player1Move) revert("Invalid Data");
+        if (calculatedHash != game.player1Move) revert Invalid_Move();
 
         // Winner conditions
         if (game.player2Move == State.PAPER && _player1Move == State.ROCK) {
@@ -120,4 +130,6 @@ contract RockPaperScissors {
         delete games[_gameId];
         payable(msg.sender).transfer(stakedAmount);
     }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner { }
 }
